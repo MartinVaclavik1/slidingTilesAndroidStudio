@@ -16,9 +16,12 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlin.math.abs
 import android.graphics.BitmapFactory
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.Composable
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MainActivity : ComponentActivity() {
     private lateinit var gridLayout: GridLayout
@@ -35,10 +38,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var root : LinearLayout
 
     private var isFrozenGrid = false
-
+//TODO opravit refresh aplikace/neaktualizování theme po změně - v manifestu android:configChanges="uiMode|
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         root = LinearLayout(this).apply {
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
@@ -145,20 +147,20 @@ class MainActivity : ComponentActivity() {
             unfreezeGrid()
         }
 
-        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-            Configuration.UI_MODE_NIGHT_YES -> {
-                layout.setBackgroundColor(Color.BLACK)
-                sizeLabel.setTextColor(Color.WHITE)
-                typeLabel.setTextColor(Color.WHITE)
-                sizeSpinner.setBackgroundColor(Color.WHITE)
-            }
-            Configuration.UI_MODE_NIGHT_NO -> {
-                layout.setBackgroundColor(Color.WHITE)
-                sizeLabel.setTextColor(Color.BLACK)
-                typeLabel.setTextColor(Color.BLACK)
-                sizeSpinner.setBackgroundColor(Color.BLACK)
-            }
-        }
+//        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+//            Configuration.UI_MODE_NIGHT_YES -> {
+//                layout.setBackgroundColor(Color.BLACK)
+//                sizeLabel.setTextColor(Color.WHITE)
+//                typeLabel.setTextColor(Color.WHITE)
+//                sizeSpinner.setBackgroundColor(Color.WHITE)
+//            }
+//            Configuration.UI_MODE_NIGHT_NO -> {
+//                layout.setBackgroundColor(Color.WHITE)
+//                sizeLabel.setTextColor(Color.BLACK)
+//                typeLabel.setTextColor(Color.BLACK)
+//                sizeSpinner.setBackgroundColor(Color.BLACK)
+//            }
+//        }
         dialog.show()
 
     }
@@ -181,7 +183,7 @@ class MainActivity : ComponentActivity() {
             val tile = if (i == size * size - 1) null else Button(this).apply {
                 text = (i + 1).toString()
                 textSize = 20f
-                setBackgroundColor(Color.LTGRAY)
+                //setBackgroundColor(Color.LTGRAY)
                 setOnClickListener { moveTile(this) }
             }
 
@@ -401,7 +403,6 @@ class MainActivity : ComponentActivity() {
     private fun showWinPopup() {
 
         freezeGrid()    //aby uživatel nemohl hrát již dohranou hru
-
         AlertDialog.Builder(this)
             .setTitle("🎉 Congratulations!")
             .setMessage("You solved the puzzle!")
@@ -442,14 +443,19 @@ class MainActivity : ComponentActivity() {
         }else{
             root.orientation = LinearLayout.VERTICAL
         }
-        when (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-            Configuration.UI_MODE_NIGHT_YES -> {
-                root.setBackgroundColor(Color.BLACK)
-            }
-            Configuration.UI_MODE_NIGHT_NO -> {
-                root.setBackgroundColor(Color.WHITE)
-            }
-        }
+//        when (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+//            Configuration.UI_MODE_NIGHT_YES -> {
+//                root.setBackgroundColor(Color.BLACK)
+//                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+//            }
+//            Configuration.UI_MODE_NIGHT_NO -> {
+//                root.setBackgroundColor(Color.WHITE)
+//                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+//            }
+//        }
+
+
+
     }
 
 }
