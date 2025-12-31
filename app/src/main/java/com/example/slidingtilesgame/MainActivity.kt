@@ -1,5 +1,6 @@
 package com.example.slidingtilesgame
 
+import android.R.style.Theme
 import android.app.AlertDialog
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -69,7 +70,6 @@ class MainActivity : ComponentActivity() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 40, 40, 40)
-
         }
         val topBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -145,6 +145,20 @@ class MainActivity : ComponentActivity() {
             unfreezeGrid()
         }
 
+        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                layout.setBackgroundColor(Color.BLACK)
+                sizeLabel.setTextColor(Color.WHITE)
+                typeLabel.setTextColor(Color.WHITE)
+                sizeSpinner.setBackgroundColor(Color.WHITE)
+            }
+            Configuration.UI_MODE_NIGHT_NO -> {
+                layout.setBackgroundColor(Color.WHITE)
+                sizeLabel.setTextColor(Color.BLACK)
+                typeLabel.setTextColor(Color.BLACK)
+                sizeSpinner.setBackgroundColor(Color.BLACK)
+            }
+        }
         dialog.show()
 
     }
@@ -427,7 +441,14 @@ class MainActivity : ComponentActivity() {
             root.orientation = LinearLayout.HORIZONTAL
         }else{
             root.orientation = LinearLayout.VERTICAL
-
+        }
+        when (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                root.setBackgroundColor(Color.BLACK)
+            }
+            Configuration.UI_MODE_NIGHT_NO -> {
+                root.setBackgroundColor(Color.WHITE)
+            }
         }
     }
 
