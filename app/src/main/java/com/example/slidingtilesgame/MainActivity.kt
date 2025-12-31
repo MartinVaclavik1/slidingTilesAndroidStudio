@@ -38,7 +38,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Build UI programmatically (no XML needed)
         root = LinearLayout(this).apply {
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
@@ -79,21 +78,18 @@ class MainActivity : ComponentActivity() {
 
         layout.addView(topBar)
 
-        // Grid size label
         val sizeLabel = TextView(this).apply {
             text = "Select Grid Size"
             textSize = 16f
         }
         layout.addView(sizeLabel)
 
-        // Spinner for sizes
         val sizeSpinner = Spinner(this)
         var sizes = mutableListOf<Int>()
         (3..8).forEach { sizes.add(it) }
         sizeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sizes)
         layout.addView(sizeSpinner)
 
-        // Puzzle type label
         val typeLabel = TextView(this).apply {
             text = "Puzzle Type"
             textSize = 16f
@@ -115,13 +111,11 @@ class MainActivity : ComponentActivity() {
 
         layout.addView(deleteImageButton)
 
-        // Start button
         val startBtn = Button(this).apply {
             text = "Start"
         }
         layout.addView(startBtn)
 
-        // Build the AlertDialog
         val dialog = AlertDialog.Builder(this)
             .setView(layout)
             .setCancelable(false)
@@ -212,7 +206,7 @@ class MainActivity : ComponentActivity() {
                 imageTiles[tileIndex] = imageTiles[emptyIndex]
                 imageTiles[emptyIndex] = temp
 
-                setupImageGame() // redraw tiles
+                setupImageGame()
 
                 if (isImageSolved()) {
                     showWinPopup()
