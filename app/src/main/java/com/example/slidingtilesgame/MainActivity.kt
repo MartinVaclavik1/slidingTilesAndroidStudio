@@ -16,12 +16,11 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlin.math.abs
 import android.graphics.BitmapFactory
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.core.view.setPadding
 
 class MainActivity : ComponentActivity() {
     private lateinit var gridLayout: GridLayout
@@ -37,8 +36,10 @@ class MainActivity : ComponentActivity() {
     private val tiles = mutableListOf<Button?>()
     private lateinit var root : LinearLayout
 
+    private var activeDialog: AlertDialog? = null
+
     private var isFrozenGrid = false
-//TODO opravit refresh aplikace/neaktualizování theme po změně - v manifestu android:configChanges="uiMode|
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         root = LinearLayout(this).apply {
@@ -50,7 +51,9 @@ class MainActivity : ComponentActivity() {
         }
 
         gridLayout = GridLayout(this).apply {
+            setPadding(0,0,0,10)
         }
+
         novaHraButton = Button(this).apply {
             text = "New Game"
             setOnClickListener { showOptionsPopup() }
@@ -65,6 +68,8 @@ class MainActivity : ComponentActivity() {
         showOptionsPopup()
         onConfigurationChanged(resources.configuration)
     }
+
+
 
     private fun showOptionsPopup() {
         bitmap = null
@@ -126,7 +131,10 @@ class MainActivity : ComponentActivity() {
         val cancelBtn = ImageButton(this).apply {
             setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
             setBackgroundColor(Color.TRANSPARENT)
-            setOnClickListener{dialog.dismiss()}
+            setOnClickListener{
+                dialog.dismiss()
+                activeDialog = null
+            }
         }
 
         topBar.addView(cancelBtn)
@@ -144,23 +152,11 @@ class MainActivity : ComponentActivity() {
 
             shuffleTiles()
             dialog.dismiss()
+            activeDialog = null
             unfreezeGrid()
         }
 
-//        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-//            Configuration.UI_MODE_NIGHT_YES -> {
-//                layout.setBackgroundColor(Color.BLACK)
-//                sizeLabel.setTextColor(Color.WHITE)
-//                typeLabel.setTextColor(Color.WHITE)
-//                sizeSpinner.setBackgroundColor(Color.WHITE)
-//            }
-//            Configuration.UI_MODE_NIGHT_NO -> {
-//                layout.setBackgroundColor(Color.WHITE)
-//                sizeLabel.setTextColor(Color.BLACK)
-//                typeLabel.setTextColor(Color.BLACK)
-//                sizeSpinner.setBackgroundColor(Color.BLACK)
-//            }
-//        }
+        activeDialog = dialog
         dialog.show()
 
     }
@@ -403,7 +399,7 @@ class MainActivity : ComponentActivity() {
     private fun showWinPopup() {
 
         freezeGrid()    //aby uživatel nemohl hrát již dohranou hru
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("🎉 Congratulations!")
             .setMessage("You solved the puzzle!")
             .setCancelable(false)
@@ -414,7 +410,8 @@ class MainActivity : ComponentActivity() {
             .setNegativeButton("Close") { dialog, _ ->
                 dialog.dismiss()
             }
-            .show()
+
+        activeDialog = dialog.show()
     }
 
     fun getStatusBarHeight(): Int {
@@ -443,21 +440,41 @@ class MainActivity : ComponentActivity() {
         }else{
             root.orientation = LinearLayout.VERTICAL
         }
+
 //        when (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
 //            Configuration.UI_MODE_NIGHT_YES -> {
-//                root.setBackgroundColor(Color.BLACK)
-//                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+//                setNightMode(true)
 //            }
+//
 //            Configuration.UI_MODE_NIGHT_NO -> {
-//                root.setBackgroundColor(Color.WHITE)
-//                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+//                setNightMode(false)
 //            }
 //        }
+        val isNight =
+            (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                    Configuration.UI_MODE_NIGHT_YES
 
-
-
+        applyTheme(isNight)
     }
+    private fun applyTheme(isNight: Boolean) {
+        val bgColor = if (isNight) Color.BLACK else Color.WHITE
+        val textColor = if (isNight) Color.WHITE else Color.BLACK
+        val tileColor = if (isNight) Color.DKGRAY else Color.LTGRAY
 
+        root.setBackgroundColor(bgColor)
+
+        novaHraButton.setTextColor(textColor)
+        novaHraButton.setBackgroundColor(tileColor)
+
+        tiles.filterNotNull().forEach { btn ->
+            btn.setTextColor(textColor)
+            btn.setBackgroundColor(tileColor)
+        }
+        if(activeDialog != null){
+            activeDialog!!.dismiss()
+            showOptionsPopup()
+        }
+    }
 }
 
 
