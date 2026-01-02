@@ -1,6 +1,5 @@
 package com.example.slidingtilesgame
 
-import android.R.style.Theme
 import android.app.AlertDialog
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -16,11 +15,9 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlin.math.abs
 import android.graphics.BitmapFactory
-import androidx.compose.material3.MaterialTheme
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.setPadding
 
 class MainActivity : ComponentActivity() {
     private lateinit var gridLayout: GridLayout
@@ -179,7 +176,6 @@ class MainActivity : ComponentActivity() {
             val tile = if (i == size * size - 1) null else Button(this).apply {
                 text = (i + 1).toString()
                 textSize = 20f
-                //setBackgroundColor(Color.LTGRAY)
                 setOnClickListener { moveTile(this) }
             }
 
@@ -441,15 +437,6 @@ class MainActivity : ComponentActivity() {
             root.orientation = LinearLayout.VERTICAL
         }
 
-//        when (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-//            Configuration.UI_MODE_NIGHT_YES -> {
-//                setNightMode(true)
-//            }
-//
-//            Configuration.UI_MODE_NIGHT_NO -> {
-//                setNightMode(false)
-//            }
-//        }
         val isNight =
             (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
