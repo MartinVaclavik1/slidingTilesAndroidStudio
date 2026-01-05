@@ -15,11 +15,17 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlin.math.abs
 import android.graphics.BitmapFactory
+import android.os.Build
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
+import androidx.compose.ui.res.fontResource
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.time.LocalDateTime
+import java.time.temporal.TemporalAmount
 
+@RequiresApi(Build.VERSION_CODES.O)
 class MainActivity : ComponentActivity() {
     private val gameViewModel: GameViewModel by viewModels()
     private lateinit var gridLayout: GridLayout
@@ -35,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var root : LinearLayout
     private var activeDialog: AlertDialog? = null
     private var isFrozenGrid = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -196,6 +203,7 @@ class MainActivity : ComponentActivity() {
                 gameViewModel.isImage = true;
                 createImageTiles(bitmap!!)
 
+
             }else{
                 gameViewModel.isImage = false
             }
@@ -204,6 +212,7 @@ class MainActivity : ComponentActivity() {
             dialog.dismiss()
             activeDialog = null
             unfreezeGrid()
+            gameViewModel.startTime = LocalDateTime.now()
         }
 
         activeDialog = dialog
@@ -441,13 +450,23 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
     private fun showWinPopup() {
+        val endTime = java.time.LocalDateTime.now()
+        val storage = StorageManager(this)
 
-        freezeGrid()    //aby uživatel nemohl hrát již dohranou hru
+        // Výpočet rozdílu mezi startem a koncem
+        val duration = java.time.Duration.between(gameViewModel.startTime, endTime)
+
+        // Naformátování času na čitelný řetězec
+        val minutes = duration.toMinutes()
+        val seconds = duration.seconds % 60
+        val timeString = String.format("%02d:%02d", minutes, seconds)
+        storage.addStats(gameViewModel.size, timeString)
+
+        freezeGrid()
         val dialog = AlertDialog.Builder(this)
             .setTitle("Congratulations!")
-            .setMessage("You solved the puzzle!")
+            .setMessage("You solved the puzzle!\n\nTotal time: $timeString")
             .setCancelable(false)
             .setPositiveButton("Play Again") { dialog, _ ->
                 dialog.dismiss()
@@ -458,6 +477,10 @@ class MainActivity : ComponentActivity() {
             }
 
         activeDialog = dialog.show()
+        for (i in storage.loadAllStats()) {
+            println(i.gridSize.toString() + i.totalTime)
+        }
+
     }
 
     fun getStatusBarHeight(): Int {
