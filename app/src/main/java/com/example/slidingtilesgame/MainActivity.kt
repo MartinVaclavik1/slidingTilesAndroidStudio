@@ -368,7 +368,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if(gameViewModel.size % 2 == 0){    //sudé
-            val index = gameViewModel.tiles.indexOf(null) +1
+            val index = gameViewModel.tiles.indexOf(null)
             //index prázdného pole od spoda je sudý a lichý počet
             // nebo lichý a sudý
             return (index % 2 == 0 && inversions % 2 == 1)
@@ -450,7 +450,7 @@ class MainActivity : ComponentActivity() {
     private fun showWinPopup() {
         val endTime = java.time.LocalDateTime.now()
         val storage = StorageManager(this)
-        var prevScore = ""
+        var prevScore = "No scores for this grid size"
 
         // Výpočet rozdílu mezi startem a koncem
         val duration = java.time.Duration.between(gameViewModel.startTime, endTime)
