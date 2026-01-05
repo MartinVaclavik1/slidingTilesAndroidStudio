@@ -367,7 +367,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if(gameViewModel.size % 2 == 0){    //sudé
-            val index = gameViewModel.tiles.indexOf(null)
+            val index = gameViewModel.size - (gameViewModel.tiles.indexOf(null) / gameViewModel.size).toInt()
             //index prázdného pole od spoda je sudý a lichý počet
             // nebo lichý a sudý
             return (index % 2 == 0 && inversions % 2 == 1)
