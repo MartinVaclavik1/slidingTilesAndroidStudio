@@ -80,8 +80,6 @@ class MainActivity : ComponentActivity() {
 
         onConfigurationChanged(resources.configuration)
     }
-
-
     private fun reconstructGridFromData() {
         gridLayout.removeAllViews()
         gridLayout.columnCount = gameViewModel.size
@@ -111,8 +109,6 @@ class MainActivity : ComponentActivity() {
             }, params)
         }
     }
-
-    // Uloží aktuální rozložení tlačítek jako čistá čísla do ViewModelu
     private fun syncViewModel() {
         gameViewModel.tileNumbers = gameViewModel.tiles.map {
             it?.text?.toString()?.toIntOrNull()
@@ -120,10 +116,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun calculateTileSize(): Int {
-        return if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-            resources.displayMetrics.widthPixels / gameViewModel.size - 20
-        else
-            (resources.displayMetrics.heightPixels - 200) / gameViewModel.size - 20
+        val displayMetrics = resources.displayMetrics
+        return if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            displayMetrics.widthPixels / gameViewModel.size - 25
+        } else {
+            val availableHeight = displayMetrics.heightPixels - getStatusBarHeight() - 100
+            availableHeight / gameViewModel.size - 10
+        }
     }
 
     private fun showOptionsPopup() {
@@ -452,10 +451,8 @@ class MainActivity : ComponentActivity() {
         val storage = StorageManager(this)
         var prevScore = "No scores for this grid size"
 
-        // Výpočet rozdílu mezi startem a koncem
         val duration = java.time.Duration.between(gameViewModel.startTime, endTime)
 
-        // Naformátování času na čitelný řetězec
         val minutes = duration.toMinutes()
         val seconds = duration.seconds % 60
         val timeString = String.format("%02d:%02d", minutes, seconds)
@@ -508,39 +505,40 @@ class MainActivity : ComponentActivity() {
     }
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        updateGrid()
 
-        if(isLandscape()){
+        val isLandscape = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+        if (isLandscape) {
             root.orientation = LinearLayout.HORIZONTAL
+            root.gravity = Gravity.CENTER
 
-        }else{
+            val gridParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = 50
+            }
+            gridLayout.layoutParams = gridParams
+
+            val buttonParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            novaHraButton.layoutParams = buttonParams
+
+        } else {
             root.orientation = LinearLayout.VERTICAL
-        }
-//
-//        val isNight =
-//            (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-//                    Configuration.UI_MODE_NIGHT_YES
-//
-//        applyTheme(isNight)
-    }
-    private fun applyTheme(isNight: Boolean) {
-        val bgColor = if (isNight) Color.BLACK else Color.WHITE
-        val textColor = if (isNight) Color.WHITE else Color.BLACK
-        val tileColor = if (isNight) Color.DKGRAY else Color.LTGRAY
+            root.gravity = Gravity.CENTER
 
-        root.setBackgroundColor(bgColor)
-
-        novaHraButton.setTextColor(textColor)
-        novaHraButton.setBackgroundColor(tileColor)
-
-        gameViewModel.tiles.filterNotNull().forEach { btn ->
-            btn.setTextColor(textColor)
-            btn.setBackgroundColor(tileColor)
+            gridLayout.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = 30
+            }
         }
-        if(activeDialog != null){
-            activeDialog!!.dismiss()
-            showOptionsPopup()
-        }
+
+        updateGrid()
     }
 }
 
