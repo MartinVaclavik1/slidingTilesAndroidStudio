@@ -15,31 +15,32 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlin.math.abs
 import android.graphics.BitmapFactory
+import androidx.activity.viewModels
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : ComponentActivity() {
+    private val gameViewModel: GameViewModel by viewModels()
     private lateinit var gridLayout: GridLayout
     private lateinit var novaHraButton: Button
-    private var isImage = false
+    //private var gameViewModel.isImage = false
     private var bitmap : Bitmap? = null
-    private var imageTiles: MutableList<Tile> = mutableListOf()
+
     private val imagePicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { loadImage(it) }
         }
-    private var size = 3
-    private val tiles = mutableListOf<Button?>()
+
     private lateinit var root : LinearLayout
-
     private var activeDialog: AlertDialog? = null
-
     private var isFrozenGrid = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -58,15 +59,67 @@ class MainActivity : ComponentActivity() {
 
         root.addView(gridLayout)
         root.addView(novaHraButton)
-
         setContentView(root)
 
-        setupGame()
-        showOptionsPopup()
+
+        if (gameViewModel.tileNumbers.isNotEmpty()) {
+            if (gameViewModel.isImage) {
+                setupImageGame()
+            } else {
+                reconstructGridFromData()
+            }
+
+        } else {
+            showOptionsPopup()
+        }
+
         onConfigurationChanged(resources.configuration)
     }
 
 
+    private fun reconstructGridFromData() {
+        gridLayout.removeAllViews()
+        gridLayout.columnCount = gameViewModel.size
+        gridLayout.rowCount = gameViewModel.size
+        gameViewModel.tiles.clear()
+
+        val tileSize = calculateTileSize()
+
+        gameViewModel.tileNumbers.forEachIndexed { index, number ->
+            val tile = if (number == null) null else Button(this).apply {
+                text = number.toString()
+                textSize = 20f
+                setOnClickListener { moveTile(this) }
+            }
+            gameViewModel.tiles.add(tile)
+
+            val params = GridLayout.LayoutParams().apply {
+                width = tileSize
+                height = tileSize
+                rowSpec = GridLayout.spec(index / gameViewModel.size)
+                columnSpec = GridLayout.spec(index % gameViewModel.size)
+                setMargins(5, 5, 5, 5)
+            }
+
+            gridLayout.addView(tile ?: Button(this).apply {
+                visibility = Button.INVISIBLE
+            }, params)
+        }
+    }
+
+    // Uloží aktuální rozložení tlačítek jako čistá čísla do ViewModelu
+    private fun syncViewModel() {
+        gameViewModel.tileNumbers = gameViewModel.tiles.map {
+            it?.text?.toString()?.toIntOrNull()
+        }.toMutableList()
+    }
+
+    private fun calculateTileSize(): Int {
+        return if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
+            resources.displayMetrics.widthPixels / gameViewModel.size - 20
+        else
+            (resources.displayMetrics.heightPixels - 200) / gameViewModel.size - 20
+    }
 
     private fun showOptionsPopup() {
         bitmap = null
@@ -137,14 +190,14 @@ class MainActivity : ComponentActivity() {
         topBar.addView(cancelBtn)
 
         startBtn.setOnClickListener {
-            size = sizeSpinner.selectedItem as Int
+            gameViewModel.size = sizeSpinner.selectedItem as Int
             setupGame()
             if (bitmap!=null){
-                isImage = true;
+                gameViewModel.isImage = true;
                 createImageTiles(bitmap!!)
 
             }else{
-                isImage = false
+                gameViewModel.isImage = false
             }
 
             shuffleTiles()
@@ -160,32 +213,33 @@ class MainActivity : ComponentActivity() {
 
     private fun setupGame() {
         gridLayout.removeAllViews()
-        gridLayout.columnCount = size
-        gridLayout.rowCount = size
-        tiles.clear()
-        isImage = false
+        gridLayout.columnCount = gameViewModel.size
+        gridLayout.rowCount = gameViewModel.size
+        gameViewModel.tiles.clear()
+        gameViewModel.isImage = false
 
         createTiles()
         shuffleTiles()
+        syncViewModel()
     }
 
     private fun createTiles() {
-        val tileSize = resources.displayMetrics.widthPixels / size - 20
+        val tileSize = calculateTileSize()
 
-        for (i in 0 until size * size) {
-            val tile = if (i == size * size - 1) null else Button(this).apply {
+        for (i in 0 until gameViewModel.size * gameViewModel.size) {
+            val tile = if (i == gameViewModel.size * gameViewModel.size - 1) null else Button(this).apply {
                 text = (i + 1).toString()
                 textSize = 20f
                 setOnClickListener { moveTile(this) }
             }
 
-            tiles.add(tile)
+            gameViewModel.tiles.add(tile)
 
             val params = GridLayout.LayoutParams().apply {
                 width = tileSize
                 height = tileSize
-                rowSpec = GridLayout.spec(i / size)
-                columnSpec = GridLayout.spec(i % size)
+                rowSpec = GridLayout.spec(i / gameViewModel.size)
+                columnSpec = GridLayout.spec(i % gameViewModel.size)
                 setMargins(5, 5, 5, 5)
             }
 
@@ -196,23 +250,22 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun moveTile(tile: Button) {
-        if(isFrozenGrid)
+        if (isFrozenGrid)
             return
 
-        val tileIndex = tiles.indexOf(tile)
-        val emptyIndex = tiles.indexOf(null)
+        val tileIndex = gameViewModel.tiles.indexOf(tile)
+        val emptyIndex = gameViewModel.tiles.indexOf(null)
 
-        if(isImage){
-
+        if (gameViewModel.isImage) {
 
             if (isAdjacent(tileIndex, emptyIndex)) {
 
-                tiles[emptyIndex] = tile
-                tiles[tileIndex] = null
+                gameViewModel.tiles[emptyIndex] = tile
+                gameViewModel.tiles[tileIndex] = null
 
-                val temp = imageTiles[tileIndex]
-                imageTiles[tileIndex] = imageTiles[emptyIndex]
-                imageTiles[emptyIndex] = temp
+                val temp = gameViewModel.imageTileData[tileIndex]
+                gameViewModel.imageTileData[tileIndex] = gameViewModel.imageTileData[emptyIndex]
+                gameViewModel.imageTileData[emptyIndex] = temp
 
                 setupImageGame()
 
@@ -220,26 +273,23 @@ class MainActivity : ComponentActivity() {
                     showWinPopup()
                 }
             }
-        }else{
+        } else {
 
-        if (isAdjacent(tileIndex, emptyIndex)) {
-            tiles[emptyIndex] = tile
-            tiles[tileIndex] = null
-            updateGrid()
-        }
+            if (isAdjacent(tileIndex, emptyIndex)) {
+                gameViewModel.tiles[emptyIndex] = tile
+                gameViewModel.tiles[tileIndex] = null
+                syncViewModel()
+                updateGrid()
 
-        if (isSolved()) {
-            showWinPopup()
+                if (isSolved()) showWinPopup()
+            }
         }
     }
-
-    }
-
-    private fun isAdjacent(i: Int, j: Int): Boolean {
-        val r1 = i / size
-        val c1 = i % size
-        val r2 = j / size
-        val c2 = j % size
+        private fun isAdjacent(i: Int, j: Int): Boolean {
+        val r1 = i / gameViewModel.size
+        val c1 = i % gameViewModel.size
+        val r2 = j / gameViewModel.size
+        val c2 = j % gameViewModel.size
         return abs(r1 - r2) + abs(c1 - c2) == 1
     }
 
@@ -247,20 +297,20 @@ class MainActivity : ComponentActivity() {
         gridLayout.removeAllViews()
 
         val tileSize = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-            resources.displayMetrics.widthPixels / size - 5
+            resources.displayMetrics.widthPixels / gameViewModel.size - 5
         else
-            (resources.displayMetrics.heightPixels - getStatusBarHeight()) / size - 5
+            (resources.displayMetrics.heightPixels - getStatusBarHeight()) / gameViewModel.size - 5
 
-        for (i in tiles.indices) {
-            val view = tiles[i] ?: Button(this).apply {
+        for (i in gameViewModel.tiles.indices) {
+            val view = gameViewModel.tiles[i] ?: Button(this).apply {
                 visibility = Button.INVISIBLE
             }
 
             val params = GridLayout.LayoutParams().apply {
                 width = tileSize
                 height = tileSize
-                rowSpec = GridLayout.spec(i / size)
-                columnSpec = GridLayout.spec(i % size)
+                rowSpec = GridLayout.spec(i / gameViewModel.size)
+                columnSpec = GridLayout.spec(i % gameViewModel.size)
                 setMargins(5, 5, 0, 0)
             }
 
@@ -270,27 +320,27 @@ class MainActivity : ComponentActivity() {
 
     private fun shuffleTiles() {
         do {
-            if(isImage) {
-                imageTiles.shuffle()
+            if(gameViewModel.isImage) {
+                gameViewModel.imageTileData.shuffle()
                 setupImageGame()
             }
             else
-                tiles.shuffle()
+                gameViewModel.tiles.shuffle()
         } while (!isSolvable() || isSolved())
         updateGrid()
     }
 
     private fun isSolved(): Boolean {
-        for (i in 0 until tiles.size - 1) {
-            if (tiles[i]?.text?.toString() != (i + 1).toString()) return false
+        for (i in 0 until gameViewModel.tiles.size - 1) {
+            if (gameViewModel.tiles[i]?.text?.toString() != (i + 1).toString()) return false
         }
         return true
     }
 
     private fun isSolvable(): Boolean {
         var inversions = 0
-        if (isImage) {
-            val indices = imageTiles.mapIndexedNotNull { index, bmp ->
+        if (gameViewModel.isImage) {
+            val indices = gameViewModel.imageTileData.mapIndexedNotNull { index, bmp ->
                 if (bmp == null) null else index
             }
 
@@ -302,7 +352,7 @@ class MainActivity : ComponentActivity() {
 
             return inversions % 2 == 0
         }
-        val numbers = tiles.filterNotNull().map { it.text.toString().toInt() }
+        val numbers = gameViewModel.tiles.filterNotNull().map { it.text.toString().toInt() }
 
         for (i in numbers.indices) {
             for (j in i + 1 until numbers.size) {
@@ -310,8 +360,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if(size % 2 == 0){    //sudé
-            val index = tiles.indexOf(null) +1
+        if(gameViewModel.size % 2 == 0){    //sudé
+            val index = gameViewModel.tiles.indexOf(null) +1
             //index prázdného pole od spoda je sudý a lichý počet
             // nebo lichý a sudý
             return (index % 2 == 0 && inversions % 2 == 1)
@@ -323,7 +373,7 @@ class MainActivity : ComponentActivity() {
 
     }
     private fun loadImage(uri: Uri) {
-        isImage = true
+        gameViewModel.isImage = true
         bitmap = null
         val inputStream = contentResolver.openInputStream(uri) ?: return
         val original = BitmapFactory.decodeStream(inputStream)
@@ -340,39 +390,42 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun createImageTiles(bitmap: Bitmap) {
-        imageTiles.clear()
-        val tileSize = bitmap.width / size
+        gameViewModel.imageTileData.clear()
+        val tileSize = bitmap.width / gameViewModel.size
+        gameViewModel.tileSize = tileSize
 
-        for (row in 0 until size) {
-            for (col in 0 until size) {
-                val number = row * size + col + 1
-                val image = if (number == size * size) null
+        for (row in 0 until gameViewModel.size) {
+            for (col in 0 until gameViewModel.size) {
+                val number = row * gameViewModel.size + col + 1
+                val image = if (number == gameViewModel.size * gameViewModel.size) null
                 else Bitmap.createBitmap(bitmap, col * tileSize, row * tileSize, tileSize, tileSize)
-                imageTiles.add(Tile(number, image))
+                gameViewModel.imageTileData.add(GameViewModel.TileData(number, image))
+
             }
         }
+
     }
     private fun setupImageGame() {
         gridLayout.removeAllViews()
-        tiles.clear()
+        gameViewModel.tiles.clear()
 
         val tileSize = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-            resources.displayMetrics.widthPixels / size - 5
+            resources.displayMetrics.widthPixels / gameViewModel.size - 5
         else
-            (resources.displayMetrics.heightPixels - getStatusBarHeight()) / size - 5
+            (resources.displayMetrics.heightPixels - getStatusBarHeight()) / gameViewModel.size - 5
 
-        for (tile in imageTiles) {
-            val button = if (tile.image == null) null else Button(this).apply {
-                background = tile.image.toDrawable(resources)
+        for (tile in gameViewModel.imageTileData) {
+            val button = if (tile.bitmap == null) null else Button(this).apply {
+                background = tile.bitmap.toDrawable(resources)
                 setOnClickListener { moveTile(this) }
             }
-            tiles.add(button)
+            gameViewModel.tiles.add(button)
 
             val params = GridLayout.LayoutParams().apply {
                 width = tileSize
                 height = tileSize
-                rowSpec = GridLayout.spec(imageTiles.indexOf(tile) / size)
-                columnSpec = GridLayout.spec(imageTiles.indexOf(tile) % size)
+                rowSpec = GridLayout.spec(gameViewModel.imageTileData.indexOf(tile) / gameViewModel.size)
+                columnSpec = GridLayout.spec(gameViewModel.imageTileData.indexOf(tile) % gameViewModel.size)
                 setMargins(5, 5, 0, 0)
             }
 
@@ -381,22 +434,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun isImageSolved(): Boolean {
-        for (i in 0 until imageTiles.size - 1) {
-            if (imageTiles[i].number != i + 1) return false
+        for (i in 0 until gameViewModel.imageTileData.size - 1) {
+            if (gameViewModel.imageTileData[i].number != i + 1) return false
         }
         return true
     }
 
-    data class Tile(
-        val number: Int,
-        val image: Bitmap?,
-    )
+
 
     private fun showWinPopup() {
 
         freezeGrid()    //aby uživatel nemohl hrát již dohranou hru
         val dialog = AlertDialog.Builder(this)
-            .setTitle("🎉 Congratulations!")
+            .setTitle("Congratulations!")
             .setMessage("You solved the puzzle!")
             .setCancelable(false)
             .setPositiveButton("Play Again") { dialog, _ ->
@@ -436,12 +486,12 @@ class MainActivity : ComponentActivity() {
         }else{
             root.orientation = LinearLayout.VERTICAL
         }
-
-        val isNight =
-            (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                    Configuration.UI_MODE_NIGHT_YES
-
-        applyTheme(isNight)
+//
+//        val isNight =
+//            (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+//                    Configuration.UI_MODE_NIGHT_YES
+//
+//        applyTheme(isNight)
     }
     private fun applyTheme(isNight: Boolean) {
         val bgColor = if (isNight) Color.BLACK else Color.WHITE
@@ -453,7 +503,7 @@ class MainActivity : ComponentActivity() {
         novaHraButton.setTextColor(textColor)
         novaHraButton.setBackgroundColor(tileColor)
 
-        tiles.filterNotNull().forEach { btn ->
+        gameViewModel.tiles.filterNotNull().forEach { btn ->
             btn.setTextColor(textColor)
             btn.setBackgroundColor(tileColor)
         }
