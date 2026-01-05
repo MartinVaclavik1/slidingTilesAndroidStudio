@@ -9,13 +9,23 @@ class StorageManager(val context: Context) {
     private val fileName = "game_history_list.json"
     private val gson = Gson()
 
-    fun addStats(size: Int, time: String) {
-        // 1. Načteme stávající seznam
+    fun addStats(size: Int, time: String, minutes: Long, seconds: Long) {
         val existingStats = loadAllStats().toMutableList()
+        var statsSize = existingStats.find {
+                stats -> stats.gridSize == size
+        }
 
-        // 2. Přidáme nový výsledek
-        val newEntry = GameStats(size,time)
-        existingStats.add(newEntry)
+        val newEntry = GameStats(size,time, minutes, seconds)
+        if (statsSize != null) {
+            if (statsSize.minutes > minutes) {
+                existingStats.remove(statsSize)
+                existingStats.add(newEntry)
+            } else if (statsSize.minutes == minutes && statsSize.seconds > seconds) {
+                existingStats.remove(statsSize)
+                existingStats.add(newEntry)
+            }
+        }
+
 
         // 3. Převedeme celý seznam na JSON
         val jsonString = gson.toJson(existingStats)

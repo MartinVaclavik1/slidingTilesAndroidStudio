@@ -18,12 +18,10 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.compose.ui.res.fontResource
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import java.time.LocalDateTime
-import java.time.temporal.TemporalAmount
 
 @RequiresApi(Build.VERSION_CODES.O)
 class MainActivity : ComponentActivity() {
@@ -412,7 +410,6 @@ class MainActivity : ComponentActivity() {
 
             }
         }
-
     }
     private fun setupImageGame() {
         gridLayout.removeAllViews()
@@ -453,6 +450,7 @@ class MainActivity : ComponentActivity() {
     private fun showWinPopup() {
         val endTime = java.time.LocalDateTime.now()
         val storage = StorageManager(this)
+        var prevScore = ""
 
         // Výpočet rozdílu mezi startem a koncem
         val duration = java.time.Duration.between(gameViewModel.startTime, endTime)
@@ -461,12 +459,20 @@ class MainActivity : ComponentActivity() {
         val minutes = duration.toMinutes()
         val seconds = duration.seconds % 60
         val timeString = String.format("%02d:%02d", minutes, seconds)
-        storage.addStats(gameViewModel.size, timeString)
+        val previousHighscore = storage.loadAllStats().find { stats -> stats.gridSize == gameViewModel.size}
+        if (previousHighscore != null) {
+            prevScore = "Previous shortest time: " + previousHighscore.totalTime
+        }
+        storage.addStats(gameViewModel.size, timeString, minutes, seconds)
 
         freezeGrid()
         val dialog = AlertDialog.Builder(this)
             .setTitle("Congratulations!")
-            .setMessage("You solved the puzzle!\n\nTotal time: $timeString")
+            .setMessage(
+                "You solved the puzzle!\n" +
+                        "\nTotal time: $timeString\n" +
+                        prevScore,
+            )
             .setCancelable(false)
             .setPositiveButton("Play Again") { dialog, _ ->
                 dialog.dismiss()
@@ -506,6 +512,7 @@ class MainActivity : ComponentActivity() {
 
         if(isLandscape()){
             root.orientation = LinearLayout.HORIZONTAL
+
         }else{
             root.orientation = LinearLayout.VERTICAL
         }
