@@ -11,7 +11,7 @@ class StorageManager(val context: Context) {
 
     fun addStats(size: Int, time: String, minutes: Long, seconds: Long) {
         val existingStats = loadAllStats().toMutableList()
-        var statsSize = existingStats.find {
+        val statsSize = existingStats.find {
                 stats -> stats.gridSize == size
         }
 
@@ -24,6 +24,8 @@ class StorageManager(val context: Context) {
                 existingStats.remove(statsSize)
                 existingStats.add(newEntry)
             }
+        }else{
+            existingStats.add(newEntry)
         }
 
 
